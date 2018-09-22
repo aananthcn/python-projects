@@ -37,6 +37,8 @@ def orthogonal_check(a):
     i2 = np.identity(2)
     if np.array_equal(a_at, i2):
         print("Yes the matrix {} is orthogonal\n" .format(a))
+        print("Its inverse is \n{}\n" .format(np.linalg.inv(a)))
+        print("Its transpose is \n{}\n" .format(np.transpose(a)))
     else:
         print("Matrix a = \n{} is NOT orthogonal"  .format(a))
         print("a * trans(a) = \n{}\n"  .format(a_at))
