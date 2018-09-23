@@ -18,6 +18,15 @@ np.set_printoptions(precision=3)
 print "--- FULL ---"
 U, s, VT = np.linalg.svd(a, full_matrices=True)
 
+# Added by Aananth
+m_U = np.matrix(U)
+m_s = np.matrix([[s[0],    0],
+                 [0,    s[1]],
+                 [0,       0],
+                 [0,       0]
+                 ])
+m_VT = np.matrix(VT)
+
 print "U:\n {}".format(U)
 print "s:\n {}".format(s)
 print "VT:\n {}".format(VT)
@@ -33,3 +42,8 @@ U, s, VT = np.linalg.svd(a, full_matrices=False)
 print "U:\n {}".format(U)
 print "s:\n {}".format(s)
 print "VT:\n {}".format(VT)
+
+# Reverse validation by Aananth
+A = m_U*m_s*m_VT
+print("Orginal Mat = \n{}" .format(a))
+print("Reverse SVD = \n{}" .format(A))
