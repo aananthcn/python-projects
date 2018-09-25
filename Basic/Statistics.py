@@ -44,16 +44,26 @@ plt.plot(xm_list, ym_list, '+')
 plt.title("Covariance X mean vs Y mean")
 
 # Gaussian distribution
-#xgauss = []
-#xgauss_fixed = np.sqrt(1 / (2 * np.pi * xvari))
-#for x in x_list:
-#    xgauss.append(xgauss_fixed * np.exp((-1 / (2 * xvari)) * np.square((x - x_mean))))
 plt.figure(2)
+plt.subplot(211)
 xvari = np.var(x_list)
 sigma = np.std(x_list)
 xaxis = np.linspace((x_mean - 3*sigma), (x_mean + 3*sigma), 100)
 plt.plot(xaxis, sps.norm.pdf(xaxis, x_mean, sigma))
-plt.title("Gaussian / Normal distribution")
+plt.title("scipy's Gaussian / Normal distribution")
 plt.xlabel("x mean: -3 sigma to +3 sigma")
 print("x_mean = {}\n" .format(x_mean))
+
+xgauss = []
+xgauss_fixed = np.sqrt(1 / (2 * np.pi * xvari))
+for x in x_list:
+    xgauss.append(xgauss_fixed * np.exp((-1 / (2 * xvari)) * np.square((x - x_mean))))
+#plt.figure(3)
+plt.subplot(212)
+plt.title("Gaussian Distribution Data")
+#xgaxis = np.linspace(min(xgauss), max(xgauss), len(xgauss))
+#plt.plot(xgaxis, xgauss, "*")
+plt.plot(xgauss, "*")
+plt.tight_layout()
+
 plt.show()
