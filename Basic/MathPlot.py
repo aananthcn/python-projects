@@ -41,19 +41,26 @@ plt.plot(x, y)
 plt.title("Exponential")
 
 
+# (1 + 1/x)^x
+y = np.power((1+1/x), x)
+plt.subplot(336)
+plt.plot(x, y)
+plt.title("e = (1 + 1/x)^x")
+
+
 # Sinusoidal
 t = np.arange(0, 720, 5)
 y = np.sin(np.deg2rad(x))
-plt.subplot(336)
+plt.subplot(337)
 plt.plot(x, y)
 plt.title("Sine")
 
 
 # Cosine
 y = np.cos(np.deg2rad(x))
-plt.subplot(337)
+plt.subplot(338)
 plt.plot(x, y)
 plt.title("Cosine")
 
-
+plt.tight_layout()
 plt.show()
