@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from zlib import crc32
 from sklearn.model_selection import StratifiedShuffleSplit
+import datetime
 
 HOUSING_CSV_FILE = "./housing.csv"
 
@@ -85,7 +86,8 @@ housing_labels = strat_train_set["median_house_value"].copy()
 
 
 ## Data Cleaning
-from sklearn.preprocessing import Imputer
+#from sklearn.preprocessing import Imputer
+from sklearn.impute import SimpleImputer as Imputer
 
 # housing.dropna(subset=["total_bedrooms"])     # option 1
 # housing.drop("total_bedrooms", axis=1)        # option 2
@@ -99,6 +101,15 @@ imputer.fit(housing_num)
 X=imputer.transform(housing_num)
 housing_tr = pd.DataFrame(X, columns=housing_num.columns)
 
+
+
+## Handling Text and Categorical Attributes
+from sklearn.preprocessing import CategoricalEncoder, OrdinalEncoder
+
+#cat_encoder = CategoricalEncoder()
+cat_encoder = OrdinalEncoder()
+housing_cat = housing["ocean_proximity"]
+housing_cat_reshaped = housing_cat.values.reshape(-1, 1)
 
 
 ## Custom Transformers
@@ -124,3 +135,117 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
 attr_adder = CombinedAttributesAdder(add_bedrooms_per_room=False)
 housing_extra_attribs = attr_adder.transform(housing.values)
 
+
+
+## Transformation Pipelines
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+from sklearn.base import BaseEstimator, TransformerMixin
+
+class DataFrameSelector(BaseEstimator, TransformerMixin):
+    def __init__(self, attribute_names):
+        self.attribute_names = attribute_names
+    def fit(self, X, y=None):
+        return  self
+    def transform(self, X):
+        return X[self.attribute_names].values
+
+
+num_attribs = list(housing_num)
+cat_attribs = ["ocean_proximity"]
+
+
+num_pipeline = Pipeline([
+    ('selector', DataFrameSelector(num_attribs)),
+    ('imputer', Imputer(strategy="median")),
+    ('attribs_adder', CombinedAttributesAdder()),
+    ('std_scaler', StandardScaler())
+])
+housing_num_tr = num_pipeline.fit_transform(housing_num)
+
+cat_pipeline = Pipeline([
+    ('selector', DataFrameSelector(cat_attribs)),
+    ('cat_encoder', OrdinalEncoder()) #CategoricalEcocder is deprecated
+])
+
+
+from sklearn.pipeline import FeatureUnion
+
+full_pipeline = FeatureUnion(transformer_list=[
+    ("num_pipeline", num_pipeline),
+    ("cat_pipeline", cat_pipeline)
+])
+
+housing_prepared = full_pipeline.fit_transform(housing)
+
+
+
+### Select and Train a Model
+## Training and Evaluation on the Training Set
+from sklearn.linear_model import LinearRegression
+
+print("\n\nLinear Regression: ")
+lin_reg = LinearRegression()
+t1 = datetime.datetime.now()
+lin_reg.fit(housing_prepared, housing_labels)
+t2 = datetime.datetime.now()
+print("time-diff = ", t2 - t1)
+
+# Testing
+some_data = housing.iloc[:5]
+some_labels = housing_labels.iloc[:5]
+some_data_prepared = full_pipeline.transform(some_data)
+print("Predictions:", lin_reg.predict(some_data_prepared))
+print("Labels:", list(some_labels))
+
+from sklearn.metrics import mean_squared_error
+housing_predictions = lin_reg.predict(housing_prepared)
+lin_mse = mean_squared_error(housing_labels, housing_predictions)
+lin_rmse = np.sqrt(lin_mse)
+print("Error:", lin_rmse)
+
+
+# Linear regression had errors, switch to DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.model_selection import cross_val_score
+
+def display_scores(scores):
+    print("Scores:", scores)
+    print("Mean:", scores.mean())
+    print("Standard deviation:", scores.std())
+
+print("\n\nDecision Tree Regression: ")
+tree_reg = DecisionTreeRegressor()
+t1 = datetime.datetime.now()
+tree_reg.fit(housing_prepared, housing_labels)
+t2 = datetime.datetime.now()
+print("time-diff = ", t2 - t1)
+lin_scores = cross_val_score(lin_reg, housing_prepared, housing_labels, scoring="neg_mean_squared_error", cv=10)
+lin_rmse_scores = np.sqrt(-lin_scores)
+display_scores(lin_rmse_scores)
+
+# Testing
+housing_predictions = tree_reg.predict(housing_prepared)
+tree_mse = mean_squared_error(housing_labels, housing_predictions)
+tree_rmse = np.sqrt(tree_mse)
+print("Error:", tree_rmse)
+
+## Better Evaluation Using Cross-Validation
+scores = cross_val_score(tree_reg, housing_prepared, housing_labels, scoring="neg_mean_squared_error", cv=10)
+tree_rmse_scores = np.sqrt(-scores)
+display_scores(tree_rmse_scores)
+
+
+# Random Forest Regressor
+from sklearn.ensemble import RandomForestRegressor
+
+print("\n\nRandom Forest Regression: ")
+forest_reg = RandomForestRegressor()
+t1 = datetime.datetime.now()
+forest_reg.fit(housing_prepared, housing_labels)
+t2 = datetime.datetime.now()
+print("time-diff = ", t2 - t1)
+forest_scores = cross_val_score(forest_reg, housing_prepared, housing_labels, scoring="neg_mean_squared_error", cv=10)
+forest_rmse_scores = np.sqrt(-forest_scores)
+display_scores(forest_rmse_scores)
